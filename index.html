@@ -126,7 +126,7 @@
         // TELAS DO SISTEMA
         const LoginScreen = ({ onLogin, showMessage }) => {
             const [isRegistering, setIsRegistering] = useState(false);
-            const [email, setEmail] = useState('');
+            const [loginCode, setLoginCode] = useState('');
             const [password, setPassword] = useState('');
             const [regName, setRegName] = useState('');
             const [regCode, setRegCode] = useState('');
@@ -138,7 +138,8 @@
             const handleLogin = (e) => {
                 e.preventDefault();
                 const savedUsers = JSON.parse(window.localStorage.getItem('friganso_users') || '[]');
-                let user = savedUsers.find(u => u.email === email && u.password === password);
+                // Agora ele busca pelo Código (ID) em vez do e-mail
+                let user = savedUsers.find(u => u.code === loginCode && u.password === password);
 
                 if (user) {
                     if (user.code === '99206' && user.role !== 'admin') {
@@ -148,7 +149,7 @@
                     }
                     onLogin({ ...user });
                 } else {
-                    showMessage('E-mail ou senha incorretos.', 'error');
+                    showMessage('Código ou senha incorretos.', 'error');
                 }
             };
 
@@ -206,7 +207,7 @@
 
                         {!isRegistering ? (
                             <form onSubmit={handleLogin} className="space-y-4">
-                                <div className="relative"><div className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"><IconUser/></div><input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full pl-10 pr-4 py-3.5 bg-white border-0 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none text-sm font-medium" required placeholder="Seu E-mail"/></div>
+                                <div className="relative"><div className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"><IconUser/></div><input type="text" value={loginCode} onChange={e => setLoginCode(e.target.value)} className="w-full pl-10 pr-4 py-3.5 bg-white border-0 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none text-sm font-medium" required placeholder="Seu Código (Ex: 99206)"/></div>
                                 <div className="relative"><div className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"><IconLock/></div><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full pl-10 pr-4 py-3.5 bg-white border-0 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none text-sm font-medium" required placeholder="Sua Senha"/></div>
                                 <button type="submit" className="w-full bg-rose-700 hover:bg-rose-800 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-rose-900/50 transition-all">Entrar no Sistema</button>
                                 <div className="relative flex py-4 items-center"><div className="flex-grow border-t border-slate-500/30"></div><span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-medium uppercase">Ou</span><div className="flex-grow border-t border-slate-500/30"></div></div>
