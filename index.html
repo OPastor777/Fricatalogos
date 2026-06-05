@@ -133,6 +133,10 @@
             const [regEmail, setRegEmail] = useState('');
             const [regPassword, setRegPassword] = useState('');
 
+            // Novos estados para o login do Google
+            const [pendingGoogleUser, setPendingGoogleUser] = useState(null);
+            const [googleCode, setGoogleCode] = useState('');
+
             const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&.])[A-Za-z\d@$!%*#?&.]{6,}$/;
 
             const handleLogin = (e) => {
@@ -163,14 +167,37 @@
                     let user = savedUsers.find(u => u.email === gUser.email);
                     
                     if(!user) {
-                        user = { id: Date.now(), name: gUser.displayName, code: Math.floor(Math.random() * 90000) + 10000, email: gUser.email, role: 'vendedor', avatar: gUser.photoURL };
-                        savedUsers.push(user);
-                        window.localStorage.setItem('friganso_users', JSON.stringify(savedUsers));
+                        // NOVO: Ao invés de criar direto, pede o código na tela
+                        setPendingGoogleUser(gUser);
+                    } else {
+                        // Se já existir, loga normalmente
+                        if (user.code === '99206' && user.role !== 'admin') {
+                            user.role = 'admin';
+                            const updatedUsers = savedUsers.map(u => u.id === user.id ? user : u);
+                            window.localStorage.setItem('friganso_users', JSON.stringify(updatedUsers));
+                        }
+                        onLogin(user);
                     }
-                    onLogin(user);
                 } catch (error) {
                     showMessage(`Erro no login com Google: ${error.message}`, 'error');
                 }
+            };
+
+            const handleConfirmGoogleCode = (e) => {
+                e.preventDefault();
+                const savedUsers = JSON.parse(window.localStorage.getItem('friganso_users') || '[]');
+                if (savedUsers.some(u => u.code === googleCode)) { 
+                    showMessage('Este Código já está em uso por outro vendedor.', 'error'); 
+                    return; 
+                }
+
+                const userRole = googleCode === '99206' ? 'admin' : 'vendedor';
+                const newUser = { id: Date.now(), name: pendingGoogleUser.displayName, code: googleCode, email: pendingGoogleUser.email, password: '', role: userRole, avatar: pendingGoogleUser.photoURL };
+                
+                savedUsers.push(newUser);
+                window.localStorage.setItem('friganso_users', JSON.stringify(savedUsers));
+                showMessage(userRole === 'admin' ? 'Conta de Admin vinculada ao Google!' : 'Conta criada com sucesso!', 'success');
+                onLogin(newUser);
             };
 
             const handleRegister = (e) => {
@@ -205,7 +232,18 @@
                             <p className="text-rose-200 text-sm mt-1">{isRegistering ? 'Crie sua conta' : 'Gestão Inteligente'}</p>
                         </div>
 
-                        {!isRegistering ? (
+                        {pendingGoogleUser ? (
+                            <form onSubmit={handleConfirmGoogleCode} className="space-y-4 animate-in fade-in zoom-in duration-300">
+                                <div className="text-center mb-4">
+                                    <img src={pendingGoogleUser.photoURL} alt="Perfil" className="w-16 h-16 rounded-full mx-auto border-2 border-rose-500 mb-2"/>
+                                    <p className="text-white text-sm">Olá, <span className="font-bold">{pendingGoogleUser.displayName}</span>!</p>
+                                    <p className="text-rose-200 text-xs mt-1">Para finalizar seu cadastro com o Google, defina seu código de vendedor:</p>
+                                </div>
+                                <div className="relative"><div className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"><IconUser/></div><input type="text" value={googleCode} onChange={e => setGoogleCode(e.target.value)} className="w-full pl-10 pr-4 py-3.5 bg-white border-0 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none text-sm font-medium" required placeholder="Seu Código Único (Ex: 99206)"/></div>
+                                <button type="submit" className="w-full bg-rose-700 hover:bg-rose-800 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-rose-900/50 transition-all">Finalizar Vínculo</button>
+                                <button type="button" onClick={() => setPendingGoogleUser(null)} className="w-full py-2 text-sm font-bold text-rose-300 hover:text-white mt-2">Cancelar</button>
+                            </form>
+                        ) : !isRegistering ? (
                             <form onSubmit={handleLogin} className="space-y-4">
                                 <div className="relative"><div className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"><IconUser/></div><input type="text" value={loginCode} onChange={e => setLoginCode(e.target.value)} className="w-full pl-10 pr-4 py-3.5 bg-white border-0 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none text-sm font-medium" required placeholder="Seu Código (Ex: 99206)"/></div>
                                 <div className="relative"><div className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"><IconLock/></div><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full pl-10 pr-4 py-3.5 bg-white border-0 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none text-sm font-medium" required placeholder="Sua Senha"/></div>
