@@ -3,554 +3,494 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Rápido de Preços e Pedidos</title>
+    <title>Friganso - Premium ERP</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <style>body { background-color: #f8fafc; }</style>
+    
+    <!-- FIREBASE (O Futuro Banco de Dados Real) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+    </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
-        const IconFileText = () => <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>;
-        const IconUpload = () => <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>;
-        const IconLoader2 = () => <svg className="w-full h-full animate-spin" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>;
-        const IconSearch = () => <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
-        const IconReceipt = () => <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>;
-        const IconImage = () => <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>;
-        const IconInfo = () => <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>;
-        const IconAlertCircle = () => <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>;
-        const IconAlertTriangle = () => <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
-        const IconWhatsApp = () => <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>;
+        
+        // CONFIGURAÇÃO DO FIREBASE (VOCÊ VAI SUBSTITUIR ISSO DEPOIS)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDaQ-WDQnGi-t5mCvL6rXAWLgO4gxW_j7Y",
+            authDomain: "frigansoerm.firebaseapp.com",
+            projectId: "frigansoerm",
+            storageBucket: "frigansoerm.firebasestorage.app",
+            messagingSenderId: "13332928407",
+            appId: "1:13332928407:web:b3b51d1b825c560b9016d2",
+            measurementId: "G-963SW3XSYM"
+        };
+        // Inicializa se a chave for válida (Evita erro na tela se não tiver chave ainda)
+        let firebaseApp, auth, db;
+        if(firebaseConfig.apiKey !== "COLE_SUA_API_KEY_AQUI") {
+            firebaseApp = firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            db = firebase.firestore();
+        }
 
-        const App = () => {
-            const [products, setProducts] = useState([]);
-            const [searchTerm, setSearchTerm] = useState('');
-            const [isLoading, setIsLoading] = useState(false);
-            const [pdfJsReady, setPdfJsReady] = useState(false);
-            const [error, setError] = useState('');
-            
-            const [activeTab, setActiveTab] = useState('tabela');
-            const [orderSummary, setOrderSummary] = useState(null);
-            const [isAnalyzingOrder, setIsAnalyzingOrder] = useState(false);
-            const [orderError, setOrderError] = useState('');
-            const [orderText, setOrderText] = useState('');
+        const IconUser = () => <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+        const IconLock = () => <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
+        const IconDashboard = () => <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>;
+        const IconUsers = () => <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+        const IconShield = () => <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>;
+        const IconLogOut = () => <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
+        const IconMenu = () => <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>;
+        const IconCamera = () => <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>;
+        const IconX = () => <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+        const IconGoogle = () => <svg className="w-full h-full" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>;
+        const IconBell = () => <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>;
+        const IconSettings = () => <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
 
-            useEffect(() => {
-                if (window.pdfjsLib) {
-                    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-                    setPdfJsReady(true);
-                }
-            }, []);
+        
+        // Componente de Caixa de Mensagem (Substitui o alert)
+        const CustomMessageBox = ({ message, type = 'info', onClose }) => (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-in fade-in">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center text-center zoom-in-95 animate-in">
+                    <div className={`h-16 w-16 rounded-full flex items-center justify-center mb-4 ${type === 'error' ? 'bg-red-100 text-red-600' : type === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'}`}>
+                        {type === 'error' ? <IconX /> : <IconUser />}
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-2">{type === 'error' ? 'Atenção' : 'Aviso'}</h3>
+                    <p className="text-slate-600 text-sm mb-6">{message}</p>
+                    <button onClick={onClose} className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition-colors">Entendi</button>
+                </div>
+            </div>
+        );
 
-            const parsePrice = (priceStr) => {
-                if (!priceStr) return null;
-                let cleanStr = priceStr;
-                if (cleanStr.includes('.') && cleanStr.includes(',')) {
-                    cleanStr = cleanStr.replace(/\./g, '').replace(',', '.');
-                } else if (cleanStr.includes(',')) {
-                    cleanStr = cleanStr.replace(',', '.');
-                }
-                const val = parseFloat(cleanStr);
-                return isNaN(val) ? null : val;
-            };
+        // Componente de Confirmação (Substitui o confirm)
+        const CustomConfirmBox = ({ message, onConfirm, onCancel }) => (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-in fade-in">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col text-center zoom-in-95 animate-in">
+                    <div className="h-16 w-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4"><IconShield /></div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-2">Confirmação Necessária</h3>
+                    <p className="text-slate-600 text-sm mb-6">{message}</p>
+                    <div className="flex gap-3">
+                        <button onClick={onCancel} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors">Cancelar</button>
+                        <button onClick={onConfirm} className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-colors">Sim, Confirmar</button>
+                    </div>
+                </div>
+            </div>
+        );
 
-            const formatPrice = (value) => {
-                if (value === null || value === undefined) return 'R$ 0,00';
-                return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            };
+        const ProfileModal = ({ user, onClose, onUpdateUser, showMessage }) => {
+            const [name, setName] = useState(user.name);
+            const [avatar, setAvatar] = useState(user.avatar || '');
+            const fileInputRef = useRef(null);
 
-            const handleFileUpload = async (e) => {
+            const handleImageUpload = (e) => {
                 const file = e.target.files[0];
-                if (!file || file.type !== 'application/pdf') {
-                    setError('Por favor, selecione um arquivo PDF válido.');
-                    return;
-                }
-
-                setIsLoading(true);
-                setError('');
-                setProducts([]);
-
-                try {
-                    const arrayBuffer = await file.arrayBuffer();
-                    const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                    let extractedProducts = [];
-
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const textContent = await page.getTextContent();
-                        
-                        const linesMap = new Map();
-                        textContent.items.forEach(item => {
-                            const y = Math.round(item.transform[5] / 4) * 4; 
-                            if (!linesMap.has(y)) linesMap.set(y, []);
-                            linesMap.get(y).push(item);
-                        });
-
-                        const sortedY = Array.from(linesMap.keys()).sort((a, b) => b - a);
-
-                        sortedY.forEach(y => {
-                            const lineItems = linesMap.get(y).sort((a, b) => a.transform[4] - b.transform[4]);
-                            const lineText = lineItems.map(item => item.str).join(' ').replace(/\s+/g, ' ').trim();
-
-                            const match = lineText.match(/(?:^|\s)(\d{4,7})\s+([A-Z0-9ÇÃÕÁÉÍÓÚÂÊÔ].*)/i);
-                            if (match) {
-                                const code = match[1];
-                                let rest = match[2].trim();
-                                let rawPriceStr = null;
-
-                                rest = rest.replace(/\s+(?:UN|KG|CX|PC|PCT|BD|PLT|FD|KL|KIL|L|K|KgL|Kg|IN|F|Th|M)\s*$/gi, '').trim();
-                                
-                                // CORREÇÃO: Procura obrigatoriamente valores monetários (com decimais), impedindo que pesos (ex: "20Kg") virem preço
-                                const priceMatches = [...rest.matchAll(/(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}|\d+\.\d{2})/g)];
-                                
-                                if (priceMatches.length > 0) {
-                                    // Pega o último valor numérico encontrado na linha (A Vista)
-                                    rawPriceStr = priceMatches[priceMatches.length - 1][1];
-                                    rest = rest.replace(priceMatches[priceMatches.length - 1][0], '').trim();
-                                }
-
-                                const rawPrice = parsePrice(rawPriceStr);
-                                const discountPrice = rawPrice !== null ? rawPrice * 0.97 : null;
-
-                                extractedProducts.push({
-                                    code, name: rest, originalPrice: rawPrice, discountedPrice: discountPrice
-                                });
-                            }
-                        });
-                    }
-                    setProducts(extractedProducts);
-                    alert(`Sucesso! ${extractedProducts.length} produtos carregados na tabela.`);
-                } catch (err) {
-                    console.error(err);
-                    setError('Ocorreu um erro ao processar o PDF. Tente novamente.');
-                } finally {
-                    setIsLoading(false);
+                if(file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => { setAvatar(reader.result); };
+                    reader.readAsDataURL(file);
                 }
             };
 
-            const fileToBase64 = (file) => new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result.split(',')[1]);
-                reader.onerror = error => reject(error);
-            });
-
-            const processOrderItems = (aiExtractedItems) => {
-                return aiExtractedItems.map(aiItem => {
-                    const aiCode = (aiItem.code || '').toString().trim();
-                    const qty = parseFloat(aiItem.quantity) || 1;
-                    const unit = aiItem.unit || 'UN';
-                    
-                    // Busca o produto real na tabela carregada pelo usuário
-                    const realProduct = products.find(p => p.code === aiCode);
-                    
-                    if (!realProduct) {
-                        return {
-                            code: aiCode,
-                            name: aiItem.name || 'Produto não achou no PDF',
-                            quantity: qty,
-                            unit: unit,
-                            unitOriginalPrice: 0,
-                            unitFinalPrice: 0,
-                            originalPrice: 0,
-                            discountedPrice: 0,
-                            hasDiscount: false,
-                            notFound: true
-                        };
-                    }
-
-                    const originalPrice = parseFloat(realProduct.originalPrice) || 0;
-                    const nameStr = realProduct.name.toLowerCase().trim();
-                    
-                    let hasDiscount = true;
-                    if (aiCode.startsWith('16') || aiCode.startsWith('27') || aiCode.startsWith('90')) hasDiscount = false;
-                    if (nameStr.includes('fraldinha ramax')) hasDiscount = false;
-
-                    // CORREÇÃO: Matemática exata. Se tiver desconto, multiplica por 0.97 e arredonda cravado os centavos
-                    let unitFinalPrice = originalPrice;
-                    if (hasDiscount) {
-                        unitFinalPrice = Math.round((originalPrice * 0.97) * 100) / 100;
-                    }
-                    
-                    return {
-                        code: aiCode,
-                        name: realProduct.name,
-                        quantity: qty,
-                        unit: unit,
-                        unitOriginalPrice: originalPrice,
-                        unitFinalPrice: unitFinalPrice,
-                        originalPrice: originalPrice * qty,
-                        discountedPrice: unitFinalPrice * qty,
-                        hasDiscount: hasDiscount,
-                        notFound: false
-                    };
-                });
-            };
-
-            const generateWhatsAppText = () => {
-                if (!orderSummary) return '';
-                let txt = '';
-                if (orderSummary.customerCode && orderSummary.customerCode !== 'Não identificado') {
-                    txt += `cliente: ${orderSummary.customerCode}\n`;
-                }
-                if (orderSummary.spamov) {
-                    txt += `spamov: ${orderSummary.spamov}\n`;
-                }
+            const handleSaveProfile = () => {
+                const updatedUser = { ...user, name, avatar };
+                onUpdateUser(updatedUser);
                 
-                if (txt !== '') txt += '\n'; // Adiciona uma linha em branco separando o cabeçalho dos itens
-                
-                orderSummary.items.forEach(item => {
-                    const priceStr = formatPrice(item.unitFinalPrice);
-                    // Formato super resumido: 1602 - 3 - R$ 22,00
-                    txt += `${item.code} - ${item.quantity} - ${priceStr}\n`;
-                });
-                return txt.trim();
+                // Atualiza também na lista geral de usuários
+                const savedUsers = JSON.parse(window.localStorage.getItem('friganso_users') || '[]');
+                const updatedList = savedUsers.map(u => u.id === user.id ? updatedUser : u);
+                window.localStorage.setItem('friganso_users', JSON.stringify(updatedList));
+
+                showMessage('Perfil atualizado com sucesso!', 'success');
+                onClose();
             };
 
-            const handleCopyWhatsApp = () => {
-                const text = generateWhatsAppText();
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    alert('Resumo copiado com sucesso! Agora é só colar no WhatsApp.');
-                } catch (err) {
-                    console.error('Falha ao copiar', err);
-                }
-                document.body.removeChild(textArea);
+            const handleRequestPasswordChange = () => {
+                const requests = JSON.parse(window.localStorage.getItem('friganso_requests') || '[]');
+                requests.push({ id: Date.now(), userId: user.id, userName: user.name, type: 'Senha/Email', status: 'Pendente', date: new Date().toLocaleDateString() });
+                window.localStorage.setItem('friganso_requests', JSON.stringify(requests));
+                showMessage('Sua solicitação foi enviada ao Administrador.', 'success');
             };
-
-            const handleProcessText = () => {
-                if (products.length === 0) {
-                    setOrderError('Por favor, carregue o PDF de preços (na aba "Consulta de Preços") ANTES de processar o pedido.');
-                    return;
-                }
-                if (!orderText.trim()) {
-                    setOrderError('Cole o texto do pedido na caixa acima.');
-                    return;
-                }
-
-                setOrderError('');
-                setIsAnalyzingOrder(true);
-                setOrderSummary(null);
-
-                // Pequeno delay para a interface não travar
-                setTimeout(() => {
-                    try {
-                        const lines = orderText.split('\n');
-                        let extractedItems = [];
-                        let customerName = 'Não identificado';
-                        let spamov = '';
-
-                        // Extrai SPAmov se houver
-                        const spMatch = orderText.match(/SPAmov\s*[:\-]?\s*(\d+)/i);
-                        if (spMatch) spamov = spMatch[1];
-
-                        // Melhorado: pega apenas o CÓDIGO NUMÉRICO do cliente, ignorando nomes
-                        const clienteMatchERP = orderText.match(/CLIENTE\s*(?:\[[^\]]*\])?\s*(\d+)/i);
-                        const clienteMatchNormal = orderText.match(/(?:cliente|código|codigo)[:\-\s]+(\d+)/i);
-                        
-                        if (clienteMatchERP) {
-                            customerName = clienteMatchERP[1].trim();
-                        } else if (clienteMatchNormal) {
-                            customerName = clienteMatchNormal[1].trim();
-                        } else {
-                            const fallbackCliente = orderText.match(/CLIENTE.*?(\d{4,6})/i);
-                            if (fallbackCliente) customerName = fallbackCliente[1];
-                        }
-
-                        lines.forEach(line => {
-                            // Ignora linhas de cabeçalho ou vazias
-                            if (!line.trim() || line.toUpperCase().includes('CLIENTE') || line.toUpperCase().includes('SPAMOV')) return;
-
-                            let codeFound = null;
-                            let unitFound = 'UN';
-
-                            // 1. Encontra possíveis códigos numéricos
-                            const possibleNumbers = line.match(/\d+/g) || [];
-                            
-                            for (let numStr of possibleNumbers) {
-                                // Se o número exato está na tabela
-                                if (products.some(p => p.code === numStr)) {
-                                    codeFound = numStr;
-                                    break;
-                                }
-                                // Se o número termina com um código válido (Ex: no ERP "10628" significa item 10, código 0628)
-                                const matchingProduct = products.find(p => numStr.endsWith(p.code) && p.code.length >= 4);
-                                if (matchingProduct) {
-                                    codeFound = matchingProduct.code;
-                                    break;
-                                }
-                            }
-
-                            if (codeFound) {
-                                let qtyFound = 1;
-                                
-                                // Limpa a linha para isolar quantidades
-                                let lineWithoutParens = line.replace(/\([^)]+\)/g, ' ');
-                                
-                                // Tenta achar x/un/kg/cx/pc explícito (ex: 2 PC, 1 CX)
-                                const qtyMatchs = [...lineWithoutParens.matchAll(/\b(\d+(?:[.,]\d+)?)\s*(x|un|kg|cx|pc|pct)\b/gi)];
-                                
-                                if (qtyMatchs.length > 0) {
-                                    const lastMatch = qtyMatchs[qtyMatchs.length - 1];
-                                    qtyFound = parseFloat(lastMatch[1].replace(',', '.'));
-                                    unitFound = lastMatch[2].toUpperCase();
-                                } else {
-                                    // Tenta achar apenas a unidade solta no padrão grudado do ERP (ex: 5KgPC)
-                                    const unitMatch = line.match(/\b(PC|CX|UN|KG|PCT)\b/i) || line.match(/(PC|CX|UN|KG|PCT)(?=\d|\/|$)/i);
-                                    if (unitMatch) unitFound = unitMatch[1].toUpperCase();
-
-                                    // Pega um número solto pequeno que não seja o código ou fim do código
-                                    const otherNumbers = lineWithoutParens.match(/\b\d+(?:[.,]\d+)?\b/g)?.filter(n => !n.endsWith(codeFound) && n.length < 4);
-                                    if (otherNumbers && otherNumbers.length > 0) {
-                                        qtyFound = parseFloat(otherNumbers[0].replace(',', '.'));
-                                    }
-                                }
-
-                                extractedItems.push({
-                                    code: codeFound,
-                                    quantity: qtyFound,
-                                    unit: unitFound
-                                });
-                            }
-                        });
-
-                        if (extractedItems.length === 0) {
-                            setOrderError('Não consegui encontrar nenhum código de produto no texto. Cole o texto completo do ERP.');
-                            setIsAnalyzingOrder(false);
-                            return;
-                        }
-
-                        // Processa os itens cruzando com a tabela em PDF
-                        const processedItems = processOrderItems(extractedItems);
-                        
-                        setOrderSummary({
-                            customerCode: customerName,
-                            spamov: spamov,
-                            items: processedItems,
-                            totalOriginal: processedItems.reduce((acc, curr) => acc + curr.originalPrice, 0),
-                            totalDiscounted: processedItems.reduce((acc, curr) => acc + curr.discountedPrice, 0)
-                        });
-                    } catch (err) {
-                        console.error(err);
-                        setOrderError('Ocorreu um erro ao processar o texto. Verifique o formato.');
-                    } finally {
-                        setIsAnalyzingOrder(false);
-                    }
-                }, 300);
-            };
-
-            const filteredProducts = useMemo(() => {
-                return products.filter(p => 
-                    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                    p.code.includes(searchTerm)
-                );
-            }, [products, searchTerm]);
 
             return (
-                <div className="min-h-screen text-slate-800 p-4 md:p-8 font-sans">
-                    <div className="max-w-6xl mx-auto space-y-6">
-                        
-                        {/* Navegação */}
-                        <div className="flex flex-wrap gap-2 bg-slate-200/60 p-1.5 rounded-xl w-fit">
-                            <button 
-                                onClick={() => setActiveTab('tabela')}
-                                className={`px-5 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-all duration-200 ${activeTab === 'tabela' ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'}`}
-                            >
-                                <div className="h-4 w-4"><IconFileText /></div>
-                                Consulta de Preços (PDF)
-                            </button>
-                            <button 
-                                onClick={() => setActiveTab('resumo')}
-                                className={`px-5 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-all duration-200 ${activeTab === 'resumo' ? 'bg-white shadow-sm text-blue-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'}`}
-                            >
-                                <div className="h-4 w-4"><IconReceipt /></div>
-                                Resumo de Pedido (IA)
-                            </button>
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden zoom-in-95 animate-in relative">
+                        <div className="h-32 bg-rose-800 relative">
+                            <button onClick={onClose} className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 transition-colors backdrop-blur"><div className="h-5 w-5"><IconX/></div></button>
+                        </div>
+                        <div className="px-6 pb-6 relative">
+                            <div className="flex justify-center -mt-12 mb-4">
+                                <div className="relative">
+                                    <div className="h-24 w-24 rounded-full border-4 border-white bg-slate-100 flex items-center justify-center overflow-hidden shadow-lg">
+                                        {avatar ? <img src={avatar} className="h-full w-full object-cover" /> : <div className="h-10 w-10 text-slate-400"><IconUser/></div>}
+                                    </div>
+                                    <button onClick={() => fileInputRef.current?.click()} className="absolute bottom-0 right-0 h-8 w-8 bg-rose-600 text-white rounded-full flex items-center justify-center border-2 border-white shadow-sm hover:bg-rose-700 transition-colors">
+                                        <div className="h-4 w-4"><IconCamera/></div>
+                                    </button>
+                                    <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
+                                </div>
+                            </div>
+
+                            <div className="text-center mb-6">
+                                <span className="inline-block px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase tracking-wider mb-2">CÓD: {user.code}</span>
+                                <h2 className="text-xl font-bold text-slate-800">Meu Perfil</h2>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">Nome de Exibição</label>
+                                    <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition-all" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">E-mail Cadastrado</label>
+                                    <input type="email" value={user.email} disabled className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed" />
+                                </div>
+
+                                <button onClick={handleRequestPasswordChange} className="w-full flex items-center justify-center gap-2 py-3 border border-slate-200 rounded-xl text-slate-600 font-bold hover:bg-slate-50 transition-colors text-sm mt-2">
+                                    <div className="h-4 w-4 text-amber-500"><IconSettings/></div> Solicitar Mudança de Senha/Email
+                                </button>
+
+                                <button onClick={handleSaveProfile} className="w-full bg-rose-700 hover:bg-rose-800 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-rose-900/30 transition-all mt-4">
+                                    Salvar Alterações
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const LoginScreen = ({ onLogin, showMessage }) => {
+            const [isRegistering, setIsRegistering] = useState(false);
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            
+            const [regName, setRegName] = useState('');
+            const [regCode, setRegCode] = useState('');
+            const [regEmail, setRegEmail] = useState('');
+            const [regPassword, setRegPassword] = useState('');
+
+            const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&.])[A-Za-z\d@$!%*#?&.]{6,}$/;
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                const savedUsers = JSON.parse(window.localStorage.getItem('friganso_users') || '[]');
+                let user = savedUsers.find(u => u.email === email && u.password === password);
+
+                if (user) {
+                    if (user.code === '99206' && user.role !== 'admin') {
+                        user.role = 'admin';
+                        const updatedUsers = savedUsers.map(u => u.id === user.id ? user : u);
+                        window.localStorage.setItem('friganso_users', JSON.stringify(updatedUsers));
+                    }
+                    onLogin({ role: user.role, name: user.name, email: user.email, region: user.region || 'Região Padrão', code: user.code, id: user.id, avatar: user.avatar });
+                } else {
+                    showMessage('E-mail ou senha incorretos.', 'error');
+                }
+            };
+
+            const handleGoogleLogin = async () => {
+                // Simulação da chamada do Firebase
+                if(typeof firebase === 'undefined' || firebaseConfig.apiKey === "COLE_SUA_API_KEY_AQUI") {
+                    showMessage('O Firebase não está configurado. O Admin precisa adicionar as chaves de API no código para o Google Login funcionar na nuvem.', 'error');
+                    return;
+                }
+                
+                try {
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    const result = await auth.signInWithPopup(provider);
+                    const user = result.user;
+                    
+                    // Simula salvamento ou verificação do banco
+                    showMessage(`Bem-vindo, ${user.displayName}! (Integração de banco em construção)`, 'success');
+                } catch (error) {
+                    showMessage(`Erro no login: ${error.message}`, 'error');
+                }
+            };
+
+            const handleRegister = (e) => {
+                e.preventDefault();
+                if (!passwordRegex.test(regPassword)) {
+                    showMessage('A senha deve ter letras, números e caracteres especiais (ex: @, #).', 'error');
+                    return;
+                }
+
+                const savedUsers = JSON.parse(window.localStorage.getItem('friganso_users') || '[]');
+                
+                if (savedUsers.some(u => u.email === regEmail)) {
+                    showMessage('Este e-mail já está em uso.', 'error');
+                    return;
+                }
+                if (savedUsers.some(u => u.code === regCode)) {
+                    showMessage('Este Código já existe no sistema.', 'error');
+                    return;
+                }
+
+                const userRole = regCode === '99206' ? 'admin' : 'vendedor';
+
+                const newUser = {
+                    id: Date.now(),
+                    name: regName,
+                    code: regCode,
+                    email: regEmail,
+                    password: regPassword,
+                    role: userRole,
+                    avatar: ''
+                };
+
+                savedUsers.push(newUser);
+                window.localStorage.setItem('friganso_users', JSON.stringify(savedUsers));
+                
+                showMessage(userRole === 'admin' ? 'Conta de Admin criada!' : 'Cadastro realizado com sucesso!', 'success');
+                setIsRegistering(false);
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-slate-900 relative overflow-hidden p-4">
+                    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1607623814075-e51df1bd682f?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-rose-950/80 to-transparent"></div>
+                    
+                    <div className="w-full max-w-md p-8 glass rounded-3xl shadow-2xl relative z-10 border border-white/10 animate-in fade-in slide-in-from-bottom-4">
+                        <div className="flex flex-col items-center mb-8">
+                            <div className="h-16 w-16 mb-4 relative">
+                                <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl" fill="none">
+                                    <path d="M50 10 L90 30 L90 70 L50 90 L10 70 L10 30 Z" fill="#9f1239" stroke="#fda4af" strokeWidth="3"/>
+                                    <path d="M50 10 L50 90 M10 30 L90 70 M10 70 L90 30" stroke="#fda4af" strokeWidth="2" strokeOpacity="0.5"/>
+                                </svg>
+                            </div>
+                            <h1 className="text-3xl font-extrabold text-white">Friganso<span className="text-rose-400 font-light">ERP</span></h1>
+                            <p className="text-rose-200 text-sm mt-1">{isRegistering ? 'Crie sua conta' : 'Gestão Inteligente'}</p>
                         </div>
 
-                        {/* ABA 1: PDF */}
-                        {activeTab === 'tabela' && (
-                            <div className="space-y-6">
-                                <header className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                                    <div>
-                                        <h1 className="text-2xl md:text-3xl font-bold text-emerald-700 flex items-center gap-2">
-                                            <div className="h-8 w-8"><IconFileText /></div>
-                                            Consulta Rápida
-                                        </h1>
-                                        <p className="text-slate-500 mt-1">Primeiro: carregue o PDF do dia para a IA ter a base de preços.</p>
+                        {!isRegistering ? (
+                            <form onSubmit={handleLogin} className="space-y-4">
+                                <div>
+                                    <div className="relative">
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"><IconUser/></div>
+                                        <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full pl-10 pr-4 py-3.5 bg-white border-0 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none transition-all text-sm font-medium" required placeholder="Seu E-mail"/>
                                     </div>
-                                    <div className="flex-shrink-0 w-full md:w-auto relative group">
-                                        <input type="file" accept=".pdf" onChange={handleFileUpload} disabled={isLoading || !pdfJsReady} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed" />
-                                        <button disabled={isLoading || !pdfJsReady} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 disabled:bg-slate-300 shadow-sm">
-                                            <div className="h-5 w-5">{isLoading ? <IconLoader2 /> : <IconUpload />}</div>
-                                            {isLoading ? 'Lendo PDF...' : !pdfJsReady ? 'Aguarde...' : 'Importar PDF'}
-                                        </button>
+                                </div>
+                                <div>
+                                    <div className="relative">
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"><IconLock/></div>
+                                        <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full pl-10 pr-4 py-3.5 bg-white border-0 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none transition-all text-sm font-medium" required placeholder="Sua Senha"/>
                                     </div>
-                                </header>
+                                </div>
+                                <button type="submit" className="w-full bg-rose-700 hover:bg-rose-800 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-rose-900/50 transition-all">
+                                    Entrar no Sistema
+                                </button>
+                                
+                                <div className="relative flex py-4 items-center">
+                                    <div className="flex-grow border-t border-slate-500/30"></div>
+                                    <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-medium uppercase tracking-wider">Ou</span>
+                                    <div className="flex-grow border-t border-slate-500/30"></div>
+                                </div>
 
-                                {error && (
-                                    <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 flex items-center gap-3">
-                                        <div className="h-5 w-5 flex-shrink-0"><IconAlertCircle /></div>
-                                        <p>{error}</p>
-                                    </div>
-                                )}
+                                <button type="button" onClick={handleGoogleLogin} className="w-full bg-white hover:bg-slate-50 text-slate-700 font-bold py-3.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-3">
+                                    <div className="h-5 w-5"><IconGoogle/></div> Entrar com Google
+                                </button>
 
-                                {products.length > 0 && !isLoading && (
-                                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[65vh]">
-                                        <div className="p-4 border-b border-slate-200 bg-slate-50">
-                                            <div className="relative max-w-xl">
-                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5"><IconSearch /></div>
-                                                <input type="text" placeholder="Pesquise por código ou nome..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 outline-none" />
-                                            </div>
-                                        </div>
-                                        <div className="overflow-auto flex-1">
-                                            <table className="w-full text-left border-collapse">
-                                                <thead className="bg-white sticky top-0 shadow-sm">
-                                                    <tr>
-                                                        <th className="p-4 font-semibold text-slate-600 border-b border-slate-200">Código</th>
-                                                        <th className="p-4 font-semibold text-slate-600 border-b border-slate-200">Produto</th>
-                                                        <th className="p-4 font-semibold text-slate-600 border-b border-slate-200 text-right">Orig.</th>
-                                                        <th className="p-4 font-semibold text-emerald-700 border-b border-emerald-200 bg-emerald-50 text-right">À Vista (-3%)</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {filteredProducts.map((product, idx) => (
-                                                        <tr key={idx} className="hover:bg-slate-50 border-b border-slate-100 last:border-0">
-                                                            <td className="p-4 text-slate-500">{product.code}</td>
-                                                            <td className="p-4 text-slate-800">{product.name}</td>
-                                                            <td className="p-4 text-right text-slate-600">{formatPrice(product.originalPrice)}</td>
-                                                            <td className="p-4 text-right font-bold text-emerald-700 bg-emerald-50/50">{formatPrice(product.discountedPrice)}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                                <div className="text-center mt-6">
+                                    <button type="button" onClick={() => setIsRegistering(true)} className="text-sm font-bold text-rose-300 hover:text-white transition-colors">
+                                        Novo vendedor? <span className="underline">Criar Cadastro</span>
+                                    </button>
+                                </div>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleRegister} className="space-y-4">
+                                <input type="text" value={regName} onChange={e => setRegName(e.target.value)} className="w-full px-4 py-3 bg-white rounded-xl outline-none text-sm" required placeholder="Nome Completo"/>
+                                <input type="text" value={regCode} onChange={e => setRegCode(e.target.value)} className="w-full px-4 py-3 bg-white rounded-xl outline-none text-sm" required placeholder="Cód Vendedor (Único)"/>
+                                <input type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} className="w-full px-4 py-3 bg-white rounded-xl outline-none text-sm" required placeholder="E-mail"/>
+                                <input type="password" value={regPassword} onChange={e => setRegPassword(e.target.value)} className="w-full px-4 py-3 bg-white rounded-xl outline-none text-sm" required placeholder="Senha Forte"/>
+                                <button type="submit" className="w-full bg-rose-700 hover:bg-rose-800 text-white font-bold py-3.5 rounded-xl shadow-lg mt-2">Criar Conta</button>
+                                <button type="button" onClick={() => setIsRegistering(false)} className="w-full py-2 text-sm font-bold text-rose-300 hover:text-white mt-2">Voltar</button>
+                            </form>
                         )}
+                    </div>
+                </div>
+            );
+        };
 
-                        {/* ABA 2: IA */}
-                        {activeTab === 'resumo' && (
-                            <div className="space-y-6">
-                                {}
-                                <header className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col items-start gap-4">
-                                    <div className="w-full">
-                                        <h1 className="text-2xl md:text-3xl font-bold text-blue-700 flex items-center gap-2">
-                                            <div className="h-8 w-8"><IconReceipt /></div>
-                                            Leitor de Pedidos (Texto Inteligente)
-                                        </h1>
-                                        <p className="text-slate-500 mt-1">Cole o pedido copiado (ex: do WhatsApp). O sistema identificará os códigos automaticamente cruzando com o PDF.</p>
+        const DashboardScreen = ({ user }) => (
+            <div className="animate-in fade-in space-y-6">
+                <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+                    <h2 className="text-2xl font-bold text-slate-800">Bem-vindo(a), {user.name}!</h2>
+                    <p className="text-slate-500">Módulos de PDF, Pedidos e CRM estão em processo de reconexão à nova interface.</p>
+                </div>
+            </div>
+        );
+
+        const AdminScreen = ({ confirmAction }) => {
+            const [users, setUsers] = useState([]);
+            const [requests, setRequests] = useState([]);
+
+            useEffect(() => {
+                setUsers(JSON.parse(window.localStorage.getItem('friganso_users') || '[]'));
+                setRequests(JSON.parse(window.localStorage.getItem('friganso_requests') || '[]'));
+            }, []);
+
+            const handleDeleteUser = (id) => {
+                confirmAction("Deseja realmente excluir este usuário do sistema?", () => {
+                    const filtered = users.filter(u => u.id !== id);
+                    setUsers(filtered);
+                    window.localStorage.setItem('friganso_users', JSON.stringify(filtered));
+                });
+            };
+
+            const handleClearRequest = (id) => {
+                const filtered = requests.filter(r => r.id !== id);
+                setRequests(filtered);
+                window.localStorage.setItem('friganso_requests', JSON.stringify(filtered));
+            };
+
+            return (
+                <div className="animate-in fade-in space-y-6">
+                    <h2 className="text-2xl font-bold text-slate-800">Gestão VIP</h2>
+                    
+                    {requests.length > 0 && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
+                            <h3 className="text-lg font-bold text-amber-800 mb-4 flex items-center gap-2"><div className="h-5 w-5"><IconBell/></div> Solicitações Pendentes</h3>
+                            <div className="space-y-3">
+                                {requests.map(req => (
+                                    <div key={req.id} className="flex justify-between items-center bg-white p-4 rounded-xl border border-amber-100 shadow-sm">
+                                        <div><p className="font-bold text-slate-700">{req.userName}</p><p className="text-xs text-slate-500">Solicitou troca de: {req.type} em {req.date}</p></div>
+                                        <button onClick={() => handleClearRequest(req.id)} className="px-4 py-2 bg-amber-100 text-amber-700 font-bold rounded-lg text-sm">Marcar como Resolvido</button>
                                     </div>
-                                    <div className="w-full space-y-3">
-                                        <textarea 
-                                            value={orderText} 
-                                            onChange={(e) => setOrderText(e.target.value)} 
-                                            placeholder="Cole aqui o pedido...&#10;&#10;Exemplo:&#10;Cliente: João da Silva&#10;2x 0437&#10;1 cx 1565" 
-                                            className="w-full h-40 p-4 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none resize-none font-mono text-sm"
-                                            disabled={isAnalyzingOrder || products.length === 0}
-                                        ></textarea>
-                                        <button 
-                                            onClick={handleProcessText}
-                                            disabled={isAnalyzingOrder || products.length === 0} 
-                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 shadow-sm disabled:bg-slate-400"
-                                        >
-                                            <div className="h-5 w-5">{isAnalyzingOrder ? <IconLoader2 /> : <IconReceipt />}</div>
-                                            {isAnalyzingOrder ? 'Processando...' : products.length === 0 ? 'Carregue o PDF de Preços primeiro' : 'Calcular Resumo do Pedido'}
-                                        </button>
-                                    </div>
-                                </header>
-
-                                {orderError && (
-                                    <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 flex items-center gap-3">
-                                        <div className="h-5 w-5 flex-shrink-0"><IconAlertCircle /></div>
-                                        <p>{orderError}</p>
-                                    </div>
-                                )}
-
-                                {orderSummary && (
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-                                            <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-                                                <h2 className="font-semibold text-slate-700 text-lg">Cálculo do Pedido (Base no PDF)</h2>
-                                                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2">Cliente: {orderSummary.customerCode}</span>
-                                            </div>
-                                            <div className="overflow-auto flex-1">
-                                                <table className="w-full text-left border-collapse">
-                                                    <thead className="bg-white sticky top-0 shadow-sm">
-                                                        <tr>
-                                                            <th className="p-4 font-semibold text-slate-600 border-b border-slate-200">Qtd</th>
-                                                            <th className="p-4 font-semibold text-slate-600 border-b border-slate-200">Produto</th>
-                                                            <th className="p-4 font-semibold text-slate-600 border-b border-slate-200 text-right">Unitário</th>
-                                                            <th className="p-4 font-semibold text-blue-700 border-b border-blue-200 bg-blue-50 text-right">Subtotal</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {orderSummary.items.map((item, idx) => (
-                                                            <tr key={idx} className={`border-b border-slate-100 last:border-0 ${item.notFound ? 'bg-red-50' : 'hover:bg-slate-50'}`}>
-                                                                <td className="p-4 font-medium text-slate-500">{item.quantity}x</td>
-                                                                <td className="p-4 text-slate-800">
-                                                                    <div className="font-medium text-sm text-slate-500 mb-0.5">Cód: {item.code || '-'}</div>
-                                                                    {item.name}
-                                                                    {item.notFound && (
-                                                                        <span className="ml-2 inline-flex items-center gap-1 bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full font-medium">
-                                                                            <div className="h-3 w-3"><IconAlertTriangle /></div> Não achou no PDF
-                                                                        </span>
-                                                                    )}
-                                                                    {!item.hasDiscount && !item.notFound && (
-                                                                        <span className="ml-2 inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-medium">
-                                                                            <div className="h-3 w-3"><IconInfo /></div> S/ desconto aplicado
-                                                                        </span>
-                                                                    )}
-                                                                </td>
-                                                                <td className="p-4 text-right text-slate-600">{formatPrice(item.unitFinalPrice)}</td>
-                                                                <td className="p-4 text-right font-bold text-blue-700 bg-blue-50/50">{formatPrice(item.discountedPrice)}</td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-6">
-                                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                                                <h3 className="font-semibold text-slate-700 text-lg mb-4 flex items-center gap-2"><div className="h-5 w-5 text-slate-400"><IconReceipt /></div> Resumo Final</h3>
-                                                <div className="space-y-3">
-                                                    <div className="flex justify-between items-center text-slate-600"><span>Soma Sem Desconto:</span><span className="font-medium">{formatPrice(orderSummary.totalOriginal)}</span></div>
-                                                    <div className="flex justify-between items-center text-emerald-600"><span>Descontos (3%):</span><span className="font-medium">-{formatPrice(orderSummary.totalOriginal - orderSummary.totalDiscounted)}</span></div>
-                                                    <div className="pt-3 border-t border-slate-200 flex justify-between items-center"><span className="font-bold text-slate-800">Total a Pagar:</span><span className="text-2xl font-bold text-blue-700">{formatPrice(orderSummary.totalDiscounted)}</span></div>
-                                                </div>
-                                            </div>
-
-                                            {/* CAIXA DO WHATSAPP */}
-                                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                                                <div className="flex justify-between items-center mb-4">
-                                                    <h3 className="font-semibold text-slate-700 text-lg flex items-center gap-2">
-                                                        <div className="h-5 w-5 text-green-600"><IconWhatsApp /></div> Para o WhatsApp
-                                                    </h3>
-                                                    <button onClick={handleCopyWhatsApp} className="bg-green-100 hover:bg-green-200 text-green-800 px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2">
-                                                        Copiar Texto
-                                                    </button>
-                                                </div>
-                                                <pre className="bg-slate-50 p-4 rounded-xl text-sm font-mono text-slate-700 whitespace-pre-wrap border border-slate-200">
-                                                    {generateWhatsAppText()}
-                                                </pre>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+                                ))}
                             </div>
-                        )}
+                        </div>
+                    )}
+
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-50 border-b border-slate-200">
+                                <tr>
+                                    <th className="p-4 font-bold text-slate-600">Cód</th>
+                                    <th className="p-4 font-bold text-slate-600">Nome</th>
+                                    <th className="p-4 font-bold text-slate-600">Cargo</th>
+                                    <th className="p-4 font-bold text-slate-600">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {users.map(u => (
+                                    <tr key={u.id} className="border-b border-slate-100">
+                                        <td className="p-4 text-slate-500 font-bold">{u.code}</td>
+                                        <td className="p-4 text-slate-800 font-medium">{u.name}</td>
+                                        <td className="p-4"><span className="bg-slate-100 px-2 py-1 rounded text-xs font-bold uppercase">{u.role}</span></td>
+                                        <td className="p-4">
+                                            <button onClick={() => handleDeleteUser(u.id)} className="text-red-500 hover:text-red-700 font-bold text-sm">Excluir</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(() => {
+                const saved = window.localStorage.getItem('friganso_loggedUser');
+                return saved ? JSON.parse(saved) : null;
+            });
+
+            const [activeRoute, setActiveRoute] = useState('dashboard');
+            const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+            const [showProfile, setShowProfile] = useState(false);
+            
+            // Estado Global de Caixas de Mensagem
+            const [alertData, setAlertData] = useState(null);
+            const [confirmData, setConfirmData] = useState(null);
+
+            const showMessage = (message, type = 'info') => setAlertData({ message, type });
+            const confirmAction = (message, onConfirm) => setConfirmData({ message, onConfirm });
+
+            const handleSetUser = (userData) => {
+                if (userData) window.localStorage.setItem('friganso_loggedUser', JSON.stringify(userData));
+                else window.localStorage.removeItem('friganso_loggedUser');
+                setUser(userData);
+            };
+
+            if (!user) return (
+                <>
+                    <LoginScreen onLogin={handleSetUser} showMessage={showMessage} />
+                    {alertData && <CustomMessageBox {...alertData} onClose={() => setAlertData(null)} />}
+                </>
+            );
+
+            return (
+                <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
+                    {/* Alertas Globais */}
+                    {alertData && <CustomMessageBox {...alertData} onClose={() => setAlertData(null)} />}
+                    {confirmData && <CustomConfirmBox message={confirmData.message} onConfirm={() => { confirmData.onConfirm(); setConfirmData(null); }} onCancel={() => setConfirmData(null)} />}
+                    {showProfile && <ProfileModal user={user} onClose={() => setShowProfile(false)} onUpdateUser={handleSetUser} showMessage={showMessage} />}
+
+                    {/* Menu Mobile Toggle */}
+                    <button className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-900 text-white rounded-lg shadow-lg" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+                        <div className="h-6 w-6"><IconMenu/></div>
+                    </button>
+
+                    {/* Barra Lateral */}
+                    <div className={`fixed inset-y-0 left-0 z-40 w-72 bg-slate-950 text-slate-300 transform transition-transform duration-300 ease-in-out flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static border-r border-slate-800`}>
+                        <div className="p-6 border-b border-slate-800 flex items-center gap-4 bg-rose-950/20">
+                            <div className="h-10 w-10 relative">
+                                <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md" fill="none">
+                                    <path d="M50 10 L90 30 L90 70 L50 90 L10 70 L10 30 Z" fill="#9f1239"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-extrabold text-white tracking-tight">FRIGANSO</h1>
+                                <p className="text-[10px] text-rose-500 tracking-widest uppercase font-bold">Premium ERP</p>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-1">
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 mt-2 px-2">Gestão Principal</p>
+                            <button onClick={() => setActiveRoute('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${activeRoute === 'dashboard' ? 'bg-rose-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><div className="h-5 w-5"><IconDashboard/></div> Painel Geral</button>
+                            
+                            {user.role === 'admin' && (
+                                <>
+                                    <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-2 mt-8 px-2">Administração VIP</p>
+                                    <button onClick={() => setActiveRoute('admin')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${activeRoute === 'admin' ? 'bg-rose-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><div className="h-5 w-5"><IconShield/></div> Central de Gestão</button>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Perfil Inferior */}
+                        <div className="p-4 border-t border-slate-800 bg-slate-900/50">
+                            <button onClick={() => setShowProfile(true)} className="w-full text-left p-3 rounded-xl mb-2 flex items-center gap-3 hover:bg-slate-800 transition-colors group cursor-pointer border border-transparent hover:border-slate-700">
+                                <div className="h-10 w-10 rounded-full bg-rose-800 text-white flex items-center justify-center font-bold text-sm shadow-md border border-rose-600 overflow-hidden">
+                                    {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : user.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex-1 overflow-hidden">
+                                    <p className="text-sm font-bold text-white truncate group-hover:text-rose-400 transition-colors">{user.name}</p>
+                                    <p className="text-[10px] text-slate-500 truncate uppercase tracking-wider font-bold">CÓD: {user.code} • Meu Perfil</p>
+                                </div>
+                            </button>
+                            <button onClick={() => confirmAction("Deseja realmente sair da sua conta?", () => handleSetUser(null))} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-colors">
+                                <div className="h-4 w-4"><IconLogOut/></div> Sair do Sistema
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 pt-16 md:p-8">
+                        {activeRoute === 'dashboard' ? <DashboardScreen user={user} /> : <AdminScreen confirmAction={confirmAction} />}
                     </div>
                 </div>
             );
